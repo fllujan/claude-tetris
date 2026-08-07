@@ -1,0 +1,30 @@
+name: Sync Labels
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/labels.json'
+  workflow_dispatch: {}
+
+jobs:
+  sync-labels:
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Create or update labels from labels.json
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          jq -c '.[]' .github/labels.json | while read -r l; do
+            name=$(jq -r .name <<<"$l")
+            color=$(jq -r .color <<<"$l")
+            desc=$(jq -r .description <<<"$l")
+            gh label create "$name" --color "$color" --description "$desc" --force
+          done

@@ -1,0 +1,24 @@
+[
+  { "name": "type:bug", "color": "d73a4a", "description": "Algo no funciona como debería" },
+  { "name": "type:feature", "color": "a2eeef", "description": "Nueva funcionalidad o mejora solicitada" },
+  { "name": "type:refactor", "color": "fbca04", "description": "Cambio interno sin alterar el comportamiento" },
+  { "name": "type:docs", "color": "0075ca", "description": "Cambios en documentación (README, CLAUDE.md, etc.)" },
+  { "name": "type:question", "color": "d876e3", "description": "Se necesita más información o aclaración" },
+
+  { "name": "area:gameplay", "color": "1d76db", "description": "Lógica del juego: colisiones, rotación, lock, spawn, game over" },
+  { "name": "area:rendering", "color": "5319e7", "description": "Dibujo en canvas: draw(), colores, ghost piece, grilla" },
+  { "name": "area:controls", "color": "006b75", "description": "Entrada de teclado, pausa, hard/soft drop" },
+  { "name": "area:scoring", "color": "0e8a16", "description": "Puntaje, niveles, líneas y velocidad de caída" },
+  { "name": "area:ui", "color": "bfd4f2", "description": "HTML/CSS: layout, HUD, botón de reinicio" },
+  { "name": "area:infra", "color": "c5def5", "description": "Workflows, configuración del repo, README" },
+
+  { "name": "prio:high", "color": "b60205", "description": "Prioridad alta" },
+  { "name": "prio:medium", "color": "fbca04", "description": "Prioridad media" },
+  { "name": "prio:low", "color": "c2e0c6", "description": "Prioridad baja" },
+
+  { "name": "effort:S", "color": "ededed", "description": "Esfuerzo pequeño: cambio acotado, ej. constante o valor único" },
+  { "name": "effort:M", "color": "ededed", "description": "Esfuerzo medio: cambio en una función o un par de archivos" },
+  { "name": "effort:L", "color": "ededed", "description": "Esfuerzo grande: cambio estructural o en múltiples piezas" },
+
+  { "name": "needs-info", "color": "e4e669", "description": "Falta información para poder diagnosticar el issue" }
+]

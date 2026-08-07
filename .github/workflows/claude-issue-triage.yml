@@ -1,0 +1,88 @@
+name: Claude Issue Triage
+
+on:
+  issues:
+    types: [opened, edited, reopened]
+
+jobs:
+  triage:
+    if: |
+      github.event.sender.type != 'Bot' &&
+      (github.event.action != 'edited' || github.event.changes.title != null || github.event.changes.body != null) &&
+      !contains(github.event.issue.body, '@claude') &&
+      !contains(github.event.issue.title, '@claude')
+    runs-on: ubuntu-latest
+    concurrency:
+      group: issue-triage-${{ github.event.issue.number }}
+      cancel-in-progress: true
+    permissions:
+      contents: read
+      issues: write
+      id-token: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Run Claude Issue Triage
+        id: claude-triage
+        uses: anthropics/claude-code-action@v1
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+
+          claude_args: '--allowed-tools "Read,Grep,Glob,Bash(gh issue view:*),Bash(gh issue edit:*),Bash(gh issue comment:*),Bash(gh label list:*)"'
+
+          prompt: |
+            Estás haciendo triage automático del issue #${{ github.event.issue.number }} del repositorio ${{ github.repository }} (Tetris en JavaScript vanilla, sin build/tests — ver CLAUDE.md para la arquitectura).
+
+            Objetivo: (1) asignar labels apropiados y (2) publicar un diagnóstico técnico en español que sirva de base para implementar la solución después. NO escribas ni modifiques código, NO crees ramas ni PRs, NO cierres el issue. Solo etiquetar y comentar.
+
+            Pasos:
+
+            1. Lee el issue completo, incluyendo comentarios y labels actuales:
+               gh issue view ${{ github.event.issue.number }} --json title,body,comments,labels
+
+            2. Lee el código relevante para entender el contexto real antes de diagnosticar: CLAUDE.md (arquitectura), game.js, index.html, style.css, README.md. Usa Grep para localizar las funciones, constantes o líneas concretas que el issue menciona o que expliquen el comportamiento reportado (por ejemplo COLORS, PIECES, collide, tryRotate, lockPiece, draw, ghostY, LINE_SCORES, dropInterval, listeners de teclado, etc).
+
+            3. Asigna labels usando ÚNICAMENTE los siguientes nombres exactos (no inventes otros), aplicando exactamente uno de "type:", uno o más de "area:", exactamente uno de "prio:" y uno de "effort:":
+               - type: type:bug, type:feature, type:refactor, type:docs, type:question
+               - area: area:gameplay, area:rendering, area:controls, area:scoring, area:ui, area:infra
+               - prio: prio:high, prio:medium, prio:low
+               - effort: effort:S, effort:M, effort:L
+               - estado: needs-info (además de los anteriores, solo si falta información esencial para diagnosticar)
+               Aplícalos con: gh issue edit ${{ github.event.issue.number }} --add-label "nombre-del-label" (uno por invocación o separados por coma). No quites labels que ya haya puesto una persona.
+
+            4. Publica el diagnóstico como comentario en ESPAÑOL, usando exactamente esta plantilla (rellena los campos, no cambies los encabezados), y el comentario debe empezar por el marcador HTML literal en la primera línea:
+
+               <!-- claude-triage -->
+               ## 🔍 Diagnóstico automático
+
+               **Resumen:** <1–2 frases de qué pide o reporta el issue>
+
+               **Labels aplicados:** <lista de labels aplicados>
+
+               **Ubicación en el código**
+               - `game.js:<línea>` — `<función>`: <por qué es relevante>
+
+               **Causa probable / estado actual**
+               <qué hace hoy el código y por qué produce el comportamiento reportado, o qué falta si es una feature>
+
+               **Enfoque de solución propuesto**
+               1. <paso concreto: qué constante o función tocar y cómo>
+
+               **Criterios de aceptación**
+               - [ ] <verificable a ojo abriendo index.html>
+
+               **Riesgos / efectos colaterales**
+               <por ejemplo: si cambian COLS/ROWS/BLOCK hay que actualizar el canvas en index.html>
+
+               **Confianza:** alta | media | baja
+
+            5. Idempotencia: antes de comentar, revisa los comentarios ya leídos en el paso 1 y busca uno de github-actions[bot] que contenga el texto "<!-- claude-triage -->". Si existe, actualízalo con:
+               gh issue comment ${{ github.event.issue.number }} --edit-last --body "<nuevo contenido completo>"
+               Si no existe, créalo con:
+               gh issue comment ${{ github.event.issue.number }} --body "<contenido>"
+               En ningún caso crees un segundo comentario de diagnóstico: debe haber como máximo uno por issue.
+
+            6. Si el issue no trae información suficiente para diagnosticar con confianza (por ejemplo, un bug visual sin pasos claros), aplica también el label needs-info y usa la sección "Causa probable / estado actual" del comentario para pedir explícitamente los datos concretos que faltan (navegador, pasos para reproducir, captura de pantalla), en vez de inventar una causa.
